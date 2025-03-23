@@ -11,10 +11,12 @@ export const config = {
     // Sample rate for audio processing
     audioSampleRate: 16000,
     
+    // Words per minute for transcription (average speaking rate)
+    wordsPerMinute: 150,
+    
     // Placeholder API key (would be used in a real implementation)
     // apiKey: 'your-api-key-here',
     
     // Placeholder service URL (would be used in a real implementation)
     // serviceUrl: 'https://api.transcriptionservice.com/v1/transcribe'
 };
-

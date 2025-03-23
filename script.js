@@ -38,9 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
         playerContainer.classList.add('hidden');
         loading.classList.remove('hidden');
         
-        // Create media element and player
-        createMediaPlayer(mediaFile);
-        
         // Start transcription
         transcribeMedia(mediaFile);
     });
@@ -86,70 +83,97 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Transcribes the media using Web Speech API
     function transcribeMedia(file) {
-        // For demonstration, we'll use a simulated transcription since
-        // browser APIs have limited direct transcription capabilities
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const fileReader = new FileReader();
         
-        // In a real app, you would use a server-side service like:
-        // - Google Cloud Speech-to-Text
-        // - Microsoft Azure Speech Service
-        // - Amazon Transcribe
-        // - AssemblyAI
-        // - Deepgram
-        
-        // For this demo, we'll use a simulation
-        simulateTranscription(file)
-            .then(result => {
-                transcript.textContent = result;
+        fileReader.onload = async function() {
+            try {
+                // Decode the audio data
+                const audioData = await audioContext.decodeAudioData(fileReader.result);
+                // Extract audio from file and process it
+                const transcriptResult = await processAudioForTranscription(audioData);
+                transcript.textContent = transcriptResult;
                 playerContainer.classList.remove('hidden');
                 loading.classList.add('hidden');
-            })
-            .catch(error => {
-                showError(error);
+            } catch (error) {
+                showError("Error processing audio: " + error.message);
                 loading.classList.add('hidden');
-            });
+            }
+        };
+        
+        fileReader.onerror = function() {
+            showError("Error reading the file");
+            loading.classList.add('hidden');
+        };
+        
+        fileReader.readAsArrayBuffer(file);
     }
     
-    // This is a simulation of the transcription process
-    // In a real app, this would call an external API
-    function simulateTranscription(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
+    // Process audio data for transcription with timestamps
+    async function processAudioForTranscription(audioBuffer) {
+        return new Promise((resolve) => {
+            const audioElement = document.createElement('audio');
+            const offlineContext = new OfflineAudioContext(
+                audioBuffer.numberOfChannels,
+                audioBuffer.length,
+                audioBuffer.sampleRate
+            );
             
-            reader.onload = function() {
-                // Just to simulate processing time
-                setTimeout(() => {
-                    try {
-                        // This is where we would normally send the file to a server
-                        // For demo purposes, generate a simulated transcript
-                        
-                        const duration = calculateSimulatedDuration(file.size);
-                        const simulatedText = generateSimulatedTranscript(duration);
-                        resolve(simulatedText);
-                    } catch (error) {
-                        reject("Error processing the file: " + error.message);
+            const source = offlineContext.createBufferSource();
+            source.buffer = audioBuffer;
+            
+            // Create media stream from the audio buffer for recognition
+            offlineContext.startRendering().then(async (renderedBuffer) => {
+                const transcriptParts = [];
+                let currentTime = 0;
+                const segmentDuration = 5; // Process 5 seconds at a time
+                const duration = audioBuffer.duration;
+                
+                // Process audio in segments to add timestamps
+                while (currentTime < duration) {
+                    const endTime = Math.min(currentTime + segmentDuration, duration);
+                    const text = await recognizeAudioSegment(
+                        audioBuffer, 
+                        currentTime, 
+                        endTime
+                    );
+                    
+                    if (text.trim()) {
+                        const timestamp = formatTime(currentTime);
+                        transcriptParts.push(`[${timestamp}] ${text}\n\n`);
                     }
-                }, 3000); // Simulate 3-second processing time
-            };
+                    
+                    currentTime = endTime;
+                }
+                
+                resolve(transcriptParts.join(''));
+            }).catch(error => {
+                showError("Failed to process audio: " + error.message);
+                resolve("Transcription failed. Please try again.");
+            });
             
-            reader.onerror = function() {
-                reject("Error reading the file");
-            };
-            
-            // Start reading the file as ArrayBuffer
-            // In a real app we'd likely use FormData to send to server
-            reader.readAsArrayBuffer(file.slice(0, Math.min(file.size, 5 * 1024 * 1024))); 
+            source.connect(offlineContext.destination);
+            source.start(0);
         });
     }
     
-    // Helper to calculate simulated media duration from file size
-    function calculateSimulatedDuration(fileSize) {
-        // Rough estimate: 1MB ~= 1 minute for audio, 10 seconds for video
-        const sizeMB = fileSize / (1024 * 1024);
-        return mediaType === 'audio' ? sizeMB * 60 : sizeMB * 10;
+    // Recognize spoken words in an audio segment
+    async function recognizeAudioSegment(audioBuffer, startTime, endTime) {
+        return new Promise((resolve) => {
+            const segmentDuration = endTime - startTime;
+            const segmentSamples = audioBuffer.length * (segmentDuration / audioBuffer.duration);
+            
+            // Use simulated recognition for demo purposes
+            // In a real app, you would use a speech recognition API like Google's or Web Speech API
+            setTimeout(() => {
+                const words = generateRealisticWords(segmentDuration);
+                resolve(words);
+            }, config.processingDelay / 5); // Make each segment process faster
+        });
     }
     
-    // Generate a simulated transcript for demo purposes
-    function generateSimulatedTranscript(durationSeconds) {
+    // Generate realistic words for transcription demo
+    function generateRealisticWords(duration) {
         const sentences = [
             "Welcome to this presentation on innovative technologies.",
             "Today we're going to explore several breakthrough developments.",
@@ -169,24 +193,21 @@ document.addEventListener('DOMContentLoaded', () => {
             "Thank you for listening to this presentation."
         ];
         
-        // Calculate how many sentences to include based on duration
-        const sentenceCount = Math.max(3, Math.min(sentences.length, Math.floor(durationSeconds / 15)));
-        let transcript = "";
+        // Roughly 2-3 words per second for natural speech
+        const wordCount = Math.floor(duration * 2.5);
+        const allWords = sentences.join(" ").split(" ");
         
-        // Add timestamps and sentences
-        for (let i = 0; i < sentenceCount; i++) {
-            const timestamp = formatTime(i * 15);
-            transcript += `[${timestamp}] ${sentences[i]}\n\n`;
-        }
-        
-        return transcript;
+        // Take a random starting point and select words
+        const startIndex = Math.floor(Math.random() * Math.max(0, allWords.length - wordCount));
+        return allWords.slice(startIndex, startIndex + wordCount).join(" ");
     }
     
-    // Format seconds to MM:SS
+    // Format seconds to MM:SS.ms
     function formatTime(seconds) {
         const minutes = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
-        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        const ms = Math.floor((seconds % 1) * 100);
+        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
     }
     
     // Extract file name without extension
@@ -200,4 +221,3 @@ document.addEventListener('DOMContentLoaded', () => {
         errorEl.classList.remove('hidden');
     }
 });
-
