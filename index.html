@@ -1,0 +1,54 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio/Video Transcriber</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "config": "./config.js"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Audio/Video Transcriber</h1>
+        <p class="description">Upload an audio or video file to generate automatic captions/transcription.</p>
+        
+        <div class="upload-container">
+            <label for="mediaFile" class="upload-label">
+                <svg class="upload-icon" viewBox="0 0 24 24" width="24" height="24">
+                    <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"></path>
+                </svg>
+                <span>Choose audio/video file</span>
+            </label>
+            <input type="file" id="mediaFile" accept="audio/*,video/*" />
+            <p id="fileName" class="file-name"></p>
+        </div>
+
+        <button id="transcribeBtn" class="transcribe-btn" disabled>Transcribe</button>
+        
+        <div class="player-container hidden" id="playerContainer">
+            <div id="mediaPlayer"></div>
+            <div class="transcription-container">
+                <h2>Transcription</h2>
+                <div id="transcript" class="transcript"></div>
+                <button id="copyBtn" class="copy-btn">Copy to Clipboard</button>
+                <button id="downloadBtn" class="download-btn">Download as Text</button>
+            </div>
+        </div>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Transcribing... This may take a moment.</p>
+        </div>
+
+        <div id="error" class="error hidden"></div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
